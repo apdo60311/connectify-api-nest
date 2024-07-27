@@ -1,0 +1,31 @@
+### Users Routes
+
+GET http://localhost:3000/api/users/
+
+###
+GET http://localhost:3000/api/users/79c283fa-be06-436c-9666-1211c01383ae
+
+###
+POST http://localhost:3000/api/users/ 
+
+{}
+
+###
+PATCH http://localhost:3000/api/users/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+
+{}
+
+###
+DELETE  http://localhost:3000/api/users/9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d
+
+### Auth
+POST  http://localhost:3000/api/auth/signin 
+
+{
+    email:"user@email.com",
+    password:"eiojdsd"
+}
+
+### oauth 
+
+GET http://localhost:3000/api/oauth/facebook 
