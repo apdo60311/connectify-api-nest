@@ -1,21 +1,15 @@
-import { DynamicModule, Module } from '@nestjs/common';
-import { ConfigurationsService } from './configurations.service';
-import { CONFIG_OPTIONS } from 'src/common/constants/symbols';
-import { ConfigurationOptions } from './types/configuration-options.type';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { configurations } from "./config";
+import { validateConfig } from "./config-validation";
 
-@Module({})
-export class ConfigurationsModule {
-    static register = (options: ConfigurationOptions): DynamicModule => {
-        return {
-            module: ConfigurationsModule,
-            providers: [
-                {
-                    provide: CONFIG_OPTIONS,
-                    useValue: options
-                },
-                ConfigurationsService,
-            ],
-            exports: [ConfigurationsService]
-        };
-    }
-}
+
+@Module({
+    imports: [ConfigModule.forRoot({
+        load: [...configurations],
+        validate: validateConfig,
+        envFilePath: ['.env.development', '.env.production'],
+        isGlobal: true,
+    }),]
+})
+export class ConfigurationsModule { }

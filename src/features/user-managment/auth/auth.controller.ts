@@ -9,11 +9,10 @@ import { ResponseType } from 'src/common/types/response.type';
 import { JwtAuthGuard } from './jwt/jwt.guard';
 import { JwtAdminGaurd } from './jwt/jwt-admin.guard';
 import { AccessTokenResponse } from './types/access-token.type';
-import { ConfigurationsService } from 'src/common/configurations/configurations.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly usersService: UsersService, private readonly authService: AuthService, private readonly configurationService: ConfigurationsService) { }
+  constructor(private readonly usersService: UsersService, private readonly authService: AuthService) { }
 
   @Post('signup')
   async signup(@Session() session, @Body() createUserDto: CreateUserDto): Promise<Record<string, any>> {

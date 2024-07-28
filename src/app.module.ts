@@ -9,14 +9,17 @@ import { AuthModule } from './features/user-managment/auth/auth.module';
 import { TwoFactorAuthModule } from './features/user-managment/auth/2FA/two-factor-auth.module';
 import { OauthModule } from './features/user-managment/auth/oauth/oauth.module';
 import { ConfigurationsModule } from './common/configurations/configurations.module';
-import { postgressConfig } from './common/configurations/db.config';
+import { typeOrmAsyncOptions } from './common/configurations/config';
+// import { postgressConfig } from './common/configurations/db.config';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(
-    postgressConfig
-  ),
+  imports: [
+    ConfigurationsModule,
+    TypeOrmModule.forRootAsync(
+      typeOrmAsyncOptions
+    ),
 
-    UsersModule, AuthModule, TwoFactorAuthModule, OauthModule, ConfigurationsModule],
+    UsersModule, AuthModule, TwoFactorAuthModule, OauthModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -9,7 +9,7 @@ import { TwoFactorAuthController } from './2FA/two-factor-auth.controller';
 import { ConfigurationsModule } from 'src/common/configurations/configurations.module';
 
 @Module({
-  imports: [UsersModule, JwtAuthModule, TwoFactorAuthModule, ConfigurationsModule.register({ stage: 'PRODUCTION' }),],
+  imports: [UsersModule, JwtAuthModule, TwoFactorAuthModule, ConfigurationsModule,],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService]

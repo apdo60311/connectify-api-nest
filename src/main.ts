@@ -7,6 +7,7 @@ import { sessionSecret } from './common/constants/secrets';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { TimeoutInterceptor } from './common/interceptors/timeout/timeout.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { abortOnError: false });
@@ -24,6 +25,8 @@ async function bootstrap() {
     saveUninitialized: false,
   }))
 
-  await app.listen(3000);
+  const configService = app.get(ConfigService);
+
+  await app.listen(configService.get<number>('APP_PORT'));
 }
 bootstrap();
