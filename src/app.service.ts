@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 
 @Injectable()
-export class AppService {
-  constructor() {
+export class AppService implements OnModuleInit {
+  constructor(private readonly moduleRef: ModuleRef) {
 
+  }
+  onModuleInit() {
+    console.log(`init`);
   }
   getHello(): string {
     return "";

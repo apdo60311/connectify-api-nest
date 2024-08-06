@@ -19,13 +19,15 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TimeoutInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  const configService = app.get(ConfigService);
+
+
   app.use(session({
-    secret: sessionSecret,
+    secret: configService.get<string>('SESSION_SECRET'),
     resave: false,
     saveUninitialized: false,
   }))
 
-  const configService = app.get(ConfigService);
 
   await app.listen(configService.get<number>('APP_PORT'));
 }

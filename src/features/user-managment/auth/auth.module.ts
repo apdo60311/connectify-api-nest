@@ -5,11 +5,11 @@ import { UsersModule } from 'src/features/user-managment/users.module';
 import { JwtAuthModule } from './jwt/jwt.module';
 import { JwtStrategy } from './jwt/jwt.strategy';
 import { TwoFactorAuthModule } from './2FA/two-factor-auth.module';
-import { TwoFactorAuthController } from './2FA/two-factor-auth.controller';
 import { ConfigurationsModule } from 'src/common/configurations/configurations.module';
+import { MailingModule } from 'src/common/mailing/mailing.module';
 
 @Module({
-  imports: [UsersModule, JwtAuthModule, TwoFactorAuthModule, ConfigurationsModule,],
+  imports: [UsersModule, JwtAuthModule, TwoFactorAuthModule, ConfigurationsModule, MailingModule],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   exports: [AuthService]

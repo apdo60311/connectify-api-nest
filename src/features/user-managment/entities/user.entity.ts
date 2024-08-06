@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { UserRole } from 'src/common/enums/user-role.enum';
 import * as bcrypt from "bcryptjs"
 
@@ -49,6 +49,13 @@ export class User {
     @Column({ nullable: true })
     twoFactorSecret: string;
 
+    @Column({ nullable: true })
+    resetPasswordToken: string;
+
+    @Column({ nullable: true })
+    resetPasswordExpires: Date;
+
+    @BeforeUpdate()
     @BeforeInsert()
     async hashPassword() {
         const salt: string = await bcrypt.genSalt(10)

@@ -1,18 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, UseGuards, ParseIntPipe, ParseUUIDPipe, Req, Session, Res } from '@nestjs/common';
+import { Controller, Post, Body, Param, HttpStatus, ParseUUIDPipe, Session, HttpException, Put } from '@nestjs/common';
 import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
-import { User } from 'src/features/user-managment/entities/user.entity';
-import { UsersService } from 'src/features/user-managment/users.service';
 import { LoginDto } from './dto/login.dto';
-import { compare } from "bcryptjs"
 import { AuthService } from './auth.service';
-import { ResponseType } from 'src/common/types/response.type';
-import { JwtAuthGuard } from './jwt/jwt.guard';
-import { JwtAdminGaurd } from './jwt/jwt-admin.guard';
-import { AccessTokenResponse } from './types/access-token.type';
+import { Throttle } from '@nestjs/throttler';
 
+@Throttle({ default: { limit: 3, ttl: 300 } })
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly usersService: UsersService, private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) { }
 
   @Post('signup')
   async signup(@Session() session, @Body() createUserDto: CreateUserDto): Promise<Record<string, any>> {
@@ -23,36 +18,54 @@ export class AuthController {
 
   @Post('signin')
   async signin(@Session() session: Record<string, any>, @Body() loginDto: LoginDto): Promise<Record<string, any>> {
-    const user: User = await this.usersService.findOne({ email: loginDto.email });
-    if (user) {
-      const isMatch = await compare(loginDto.password, user.password);
-      if (isMatch) {
-        const token = await this.authService.login(loginDto);
-        session.token = token;
+    const token = await this.authService.login(loginDto);
+    session.token = token;
+    return { code: HttpStatus.OK, message: "Logged in Successfully", data: token };
+  }
 
-        return {
-          code: HttpStatus.OK, message: "Logged in Successfully", data: token
-        };
-      } else {
-        return { code: HttpStatus.UNAUTHORIZED, message: "Invalid Credentials" };
-      }
+  @Post('request-reset-password')
+  async requestResetPassword(@Body() body: Record<string, any>) {
+    const email = body.email;
+    if (!email) {
+      throw new HttpException('Email cannot be empty', HttpStatus.BAD_REQUEST);
     }
-  }
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+
+    try {
+      await this.authService.requestResetPassword(email);
+      return { code: HttpStatus.OK, message: "Password Reset Email sent successfully" }
+
+    } catch (error) {
+      throw error;
+    }
+
   }
 
+  @Put('reset-password/:token')
+  async resetPassword(@Param('token') token: string, @Body() body: Record<string, any>) {
+    const { oldPassword, newPassword } = body;
+    if (!oldPassword || !newPassword) {
+      throw new HttpException('Old Password and New Password cannot be empty', HttpStatus.BAD_REQUEST);
+    }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  getProfile(): string {
-    return "profile";
+    try {
+      await this.authService.resetPassword(token, oldPassword, newPassword);
+      return { code: HttpStatus.OK, message: "password updated successfully" }
+
+    } catch (error) {
+      throw error;
+    }
+
   }
 
-  @UseGuards(JwtAdminGaurd)
-  @Post('ban-user/:id')
-  banUser(@Param('id', new ParseUUIDPipe()) id) {
-    return `user with id = ${id} is banned`;
-  }
+  // @UseGuards(JwtAuthGuard)
+  // @Get('profile')
+  // getProfile(): string {
+  //   return "profile";
+  // }
+
+  // @UseGuards(JwtAdminGaurd)
+  // @Post('ban-user/:id')
+  // banUser(@Param('id', new ParseUUIDPipe()) id) {
+  //   return `user with id = ${id} is banned`;
+  // }
 }

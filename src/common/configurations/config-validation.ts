@@ -1,6 +1,6 @@
 import { IsDefined, IsEnum, IsNumber, IsString, validateSync } from "class-validator";
 import { Environment } from "./types/configuration-options.type";
-import { plainToClass, plainToInstance } from "class-transformer";
+import { plainToInstance } from "class-transformer";
 import { logger } from "src/utils/logger";
 
 export class EnvironmentVariables {
@@ -11,6 +11,10 @@ export class EnvironmentVariables {
     @IsDefined()
     @IsString()
     JWT_SECRET: string;
+
+    @IsDefined()
+    @IsString()
+    SESSION_SECRET: string;
 
     @IsDefined()
     @IsString()
@@ -43,6 +47,30 @@ export class EnvironmentVariables {
     @IsDefined()
     @IsString()
     APP_PORT: string;
+
+    @IsDefined()
+    @IsNumber()
+    THROTTLE_TTL_LONG: number
+
+    @IsDefined()
+    @IsNumber()
+    THROTTLE_LIMIT_LONG: number
+
+    @IsDefined()
+    @IsNumber()
+    THROTTLE_TTL_SHORT: number
+
+    @IsDefined()
+    @IsNumber()
+    THROTTLE_LIMIT_SHORT: number
+
+    @IsDefined()
+    @IsString()
+    USER_EMAIL: string
+
+    @IsDefined()
+    @IsString()
+    USER_PASSWORD: string
 }
 
 export function validateConfig(configuration: Record<string, any>) {
