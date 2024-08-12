@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Req } from '@nestjs/common';
 import { UsersService } from 'src/features/user-managment/users.service';
 import { LoginDto } from './dto/login.dto';
 import { InvalidCredentialsException, UserNotFoundException } from 'src/common/errors/auth.exceptions';
@@ -10,23 +10,72 @@ import { User } from 'src/features/user-managment/entities/user.entity';
 import { AccessTokenResponse } from './types/access-token.type';
 import * as crypto from "crypto"
 import { MailingService } from 'src/common/mailing/mailing.service';
-import { getResetPasswordMailHtml } from 'src/common/constants/strings';
+import { getLoginAttemptsWarningEmailHtml, getResetPasswordMailHtml } from 'src/common/constants/strings';
+import { Repository } from 'typeorm';
+import { LoginAttemptsEntity } from './entities/login-attempts.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
+import { LoginAttemptStatus } from './enums/login-attempt-status.enum';
+import { Request } from 'express';
+import { DeviceService } from 'src/common/device-service/device.service';
 
 @Injectable()
 export class AuthService {
 
-    constructor(private readonly usersService: UsersService, private readonly jwtService: JwtService, private readonly mailingService: MailingService) { }
+    constructor(private readonly usersService: UsersService,
+        private readonly jwtService: JwtService,
+        private readonly mailingService: MailingService,
+        @InjectRepository(LoginAttemptsEntity)
+        private readonly loginAttemptsRepository: Repository<LoginAttemptsEntity>,
+        private readonly configService: ConfigService,
+        private readonly deviceService: DeviceService,
+    ) { }
 
-    async login(login: LoginDto) {
+    async login(request: Request, login: LoginDto) {
+
+        const maxLoginAttempts: number = this.configService.get<number>('MAX_LOGIN_ATTEMPTS');
+        const maxFailureLoginAttempts: number = this.configService.get<number>('MAX_FAILURE_LOGIN_ATTEMPTS');
+        const loginBlockDuration: number = this.configService.get<number>('BLOCK_DURATION');
+
+        const attempts = await this.loginAttemptsRepository.find({
+            where: { email: login.email },
+            order: { attemptDate: 'DESC' },
+            take: maxLoginAttempts,
+        });
+
+        const faildAttemptsCount = attempts.filter((attempt: LoginAttemptsEntity) => attempt.attemptStatus == LoginAttemptStatus.FAILURE).length;
+
+        if (faildAttemptsCount % maxFailureLoginAttempts == 0 && faildAttemptsCount != 0) {
+
+            const deviceInfo = await this.deviceService.detectDevice(request);
+
+            this.mailingService.sendEmail(login.email, 'Login Attempts', getLoginAttemptsWarningEmailHtml({ deviceInfo }))
+        }
+
+        const now = new Date().getTime();
+        const isBlocked = attempts.length === maxLoginAttempts &&
+            (now - new Date(attempts[attempts.length - 1].attemptDate).getTime()) < loginBlockDuration;
+
+
+        if (isBlocked) {
+            throw new HttpException('Too many login attempts. Please try again later.', HttpStatus.FORBIDDEN);
+        }
+
         const user = await this.usersService.findOne({ email: login.email });
         if (!user) {
             throw new UserNotFoundException(login.email);
         }
+
         const passwordCorrect = await compare(login.password, user.password);
 
 
         if (!passwordCorrect) {
+            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.FAILURE });
             throw new InvalidCredentialsException();
+        } else {
+            // update login attempts
+            await this.loginAttemptsRepository.delete({ email: login.email });
+            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.SUCCESS });
         }
 
         return this.generateToken(user)

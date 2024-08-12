@@ -1,8 +1,9 @@
-import { Controller, Post, Body, Param, HttpStatus, ParseUUIDPipe, Session, HttpException, Put } from '@nestjs/common';
+import { Controller, Post, Body, Param, HttpStatus, ParseUUIDPipe, Session, HttpException, Put, Req } from '@nestjs/common';
 import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { Throttle } from '@nestjs/throttler';
+import { Request } from 'express';
 
 @Throttle({ default: { limit: 3, ttl: 300 } })
 @Controller('auth')
@@ -17,8 +18,8 @@ export class AuthController {
   }
 
   @Post('signin')
-  async signin(@Session() session: Record<string, any>, @Body() loginDto: LoginDto): Promise<Record<string, any>> {
-    const token = await this.authService.login(loginDto);
+  async signin(@Req() request: Request, @Session() session: Record<string, any>, @Body() loginDto: LoginDto): Promise<Record<string, any>> {
+    const token = await this.authService.login(request, loginDto);
     session.token = token;
     return { code: HttpStatus.OK, message: "Logged in Successfully", data: token };
   }

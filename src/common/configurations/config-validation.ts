@@ -71,6 +71,19 @@ export class EnvironmentVariables {
     @IsDefined()
     @IsString()
     USER_PASSWORD: string
+
+    @IsDefined()
+    @IsNumber()
+    MAX_LOGIN_ATTEMPTS: number
+
+    @IsDefined()
+    @IsNumber()
+    MAX_FAILURE_LOGIN_ATTEMPTS: number
+
+    @IsDefined()
+    @IsNumber()
+    BLOCK_DURATION: number
+
 }
 
 export function validateConfig(configuration: Record<string, any>) {

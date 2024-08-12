@@ -75,24 +75,26 @@ The system consists of several interconnected modules:
 ### User Management
 
 - **User Registration**
-  - Users can register with a profile photo, bio, location, and website.
-  - Input validation and sanitization.
-  - Prevent duplicate user registration.
+  - [DONE] Users can register with a profile photo, bio, location, and website.
+  - [DONE] Input validation and sanitization.
+  - [DONE] Prevent duplicate user registration.
 - **User Login**
-  - Secure authentication using JWT tokens.
+  - [DONE] Secure authentication using JWT tokens.
   - Login attempts tracking.
   - User login history.
+  
+- [DONE] Password Reset
 - User account verification.
 - User account recovery.
-- User account deletion.
+- [DONE] User account deletion.
 
 ### Authentication and Authorization
 
-- **JWT Authentication**
+- [DONE] **JWT Authentication**
   - Users receive a JWT token upon successful login.
   - Secure routes using JWT verification.
 
-- **Role-Based Access Control (RBAC)**
+- [DONE] **Role-Based Access Control (RBAC)**
   - Admin and regular user roles.
   - Route protection based on roles.
 

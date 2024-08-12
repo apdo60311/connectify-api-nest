@@ -3,6 +3,7 @@ import { User } from "src/features/user-managment/entities/user.entity";
 import { ConfigKey, Environment } from "./types/configuration-options.type";
 import { ConfigModule, ConfigService, registerAs } from "@nestjs/config";
 import { ConfigurationsModule } from "./configurations.module";
+import { LoginAttemptsEntity } from "src/features/user-managment/auth/entities/login-attempts.entity";
 
 export const postgressConfig: TypeOrmModuleOptions = {
     type: "postgres",
@@ -28,7 +29,7 @@ export const typeOrmAsyncOptions: TypeOrmModuleAsyncOptions = {
             database: "connectify_db",
             synchronize: true,
             logging: false,
-            entities: [User]
+            entities: [User, LoginAttemptsEntity]
         }
     },
     inject: [ConfigService],

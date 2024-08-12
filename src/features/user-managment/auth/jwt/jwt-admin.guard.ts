@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from "@nestjs/jwt";
 import { Observable } from "rxjs";
 import { jwtSecret } from "src/common/constants/secrets";
-import { UserRole } from "src/common/enums/user-role.enum";
+import { UserRole } from "src/features/user-managment/auth/enums/user-role.enum";
 import { JwtPayload } from "src/common/types/jwt-payload.type";
 
 @Injectable()

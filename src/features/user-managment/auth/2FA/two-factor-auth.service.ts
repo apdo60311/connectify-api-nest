@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import * as speakeasy from 'speakeasy';
 import { User } from 'src/features/user-managment/entities/user.entity';
 import { UsersService } from 'src/features/user-managment/users.service';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class TwoFactorAuthService {
