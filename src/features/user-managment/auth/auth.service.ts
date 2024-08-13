@@ -16,7 +16,7 @@ import { LoginAttemptsEntity } from './entities/login-attempts.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { LoginAttemptStatus } from './enums/login-attempt-status.enum';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { DeviceService } from 'src/common/device-service/device.service';
 
 @Injectable()
@@ -78,7 +78,8 @@ export class AuthService {
             await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.SUCCESS });
         }
 
-        return this.generateToken(user)
+        // set session
+        return this.generateToken(user);
     }
 
     async register(createUserDto: CreateUserDto): Promise<AccessTokenResponse> {

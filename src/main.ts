@@ -2,14 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { PasswordInterceptor } from './common/interceptors/password-interceptor/password.interceptor';
-import * as session from 'express-session';
-import { sessionSecret } from './common/constants/secrets';
 import { ResponseInterceptor } from './common/interceptors/response/response.interceptor';
 import { TimeoutInterceptor } from './common/interceptors/timeout/timeout.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception/http-exception.filter';
 import { ConfigService } from '@nestjs/config';
+import * as cookieParser from 'cookie-parser';
+
 
 async function bootstrap() {
+
+
   const app = await NestFactory.create(AppModule, { abortOnError: false });
 
   app.useGlobalPipes(new ValidationPipe());
@@ -21,12 +23,14 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  app.use(cookieParser(configService.get<string>('SESSION_SECRET'), {}))
 
-  app.use(session({
-    secret: configService.get<string>('SESSION_SECRET'),
-    resave: false,
-    saveUninitialized: false,
-  }))
+  // app.use(session({
+  //   secret: configService.get<string>('SESSION_SECRET'),
+  //   resave: false,
+  //   saveUninitialized: false,
+  //   store: new TypeormStore().connect(sessionEntity)
+  // }))
 
 
   await app.listen(configService.get<number>('APP_PORT'));

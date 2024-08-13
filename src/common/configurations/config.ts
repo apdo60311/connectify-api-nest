@@ -2,7 +2,6 @@ import { TypeOrmModuleAsyncOptions, TypeOrmModuleOptions } from "@nestjs/typeorm
 import { User } from "src/features/user-managment/entities/user.entity";
 import { ConfigKey, Environment } from "./types/configuration-options.type";
 import { ConfigModule, ConfigService, registerAs } from "@nestjs/config";
-import { ConfigurationsModule } from "./configurations.module";
 import { LoginAttemptsEntity } from "src/features/user-managment/auth/entities/login-attempts.entity";
 
 export const postgressConfig: TypeOrmModuleOptions = {

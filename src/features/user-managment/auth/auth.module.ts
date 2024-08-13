@@ -9,7 +9,6 @@ import { ConfigurationsModule } from 'src/common/configurations/configurations.m
 import { MailingModule } from 'src/common/mailing/mailing.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoginAttemptsEntity } from './entities/login-attempts.entity';
-import { DeviceService } from 'src/common/device-service/device.service';
 import { DeviceModule } from 'src/common/device-service/device.module';
 
 @Module({
