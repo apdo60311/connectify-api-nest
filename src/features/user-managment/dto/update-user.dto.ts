@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUrl, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsUrl, IsDateString, IsBoolean, IsNumber } from 'class-validator';
 
 export class UpdateUserDto {
     @IsOptional()
@@ -29,5 +29,16 @@ export class UpdateUserDto {
     @IsDateString()
     readonly resetPasswordExpires?: Date;
 
+    @IsOptional()
+    @IsBoolean()
+    readonly isVerified?: boolean;
+
+    @IsOptional()
+    @IsString()
+    readonly verificationToken?: string;
+
+    @IsOptional()
+    @IsNumber()
+    readonly verificationExpires?: number;
 
 }

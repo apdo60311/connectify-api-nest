@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength, IsOptional, IsUrl, IsEnum, IsDateString, IsNotEmpty, IsStrongPassword } from 'class-validator';
+import { IsString, IsEmail, MinLength, IsOptional, IsUrl, IsEnum, IsDateString, IsNotEmpty, IsStrongPassword, IsBoolean, IsNumber } from 'class-validator';
 import { UserRole } from 'src/features/user-managment/auth/enums/user-role.enum';
 
 
@@ -49,5 +49,6 @@ export class CreateUserDto {
     @IsOptional()
     @IsUrl()
     readonly profilePhoto?: string;
+
 }
 

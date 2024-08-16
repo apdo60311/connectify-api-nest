@@ -80,7 +80,8 @@ The system consists of several interconnected modules:
   - [DONE] Prevent duplicate user registration.
 - **User Login**
   - [DONE] Secure authentication using JWT tokens.
-  - Login attempts tracking.
+  - [DONE] Login attempts tracking.
+  - Block user login process in case of login attempts execeds 3 attempts
   - User login history.
   
 - [DONE] Password Reset

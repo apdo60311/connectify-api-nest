@@ -14,6 +14,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserProfileModule } from './features/user-profile/user-profile.module';
 import { PassportModule } from '@nestjs/passport';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -41,7 +42,7 @@ import { PassportModule } from '@nestjs/passport';
   providers: [
     AppService,
     {
-      provide: 'APP_GUARD',
+      provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],

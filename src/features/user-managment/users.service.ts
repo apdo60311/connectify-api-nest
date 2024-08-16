@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -35,12 +35,11 @@ export class UsersService {
 
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    console.log(updateUserDto);
     return await this.usersRepository.update({ id }, updateUserDto,)
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async remove(id: string) {
+    return await this.usersRepository.delete({ id });
   }
   async updateSecretKey(userId: string, secret: string): Promise<UpdateResult> {
     return await this.usersRepository.update(

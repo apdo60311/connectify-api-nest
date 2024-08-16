@@ -10,6 +10,7 @@ import { MailingModule } from 'src/common/mailing/mailing.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoginAttemptsEntity } from './entities/login-attempts.entity';
 import { DeviceModule } from 'src/common/device-service/device.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [UsersModule, JwtAuthModule, TwoFactorAuthModule, ConfigurationsModule, MailingModule, TypeOrmModule.forFeature([LoginAttemptsEntity]), DeviceModule],

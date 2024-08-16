@@ -55,6 +55,15 @@ export class User {
     @Column({ nullable: true })
     resetPasswordExpires: Date;
 
+    @Column({ default: false })
+    isVerified: boolean;
+
+    @Column({ type: 'bigint', nullable: true })
+    verificationExpires: number
+
+    @Column({ nullable: true })
+    verificationToken: string;
+
     @BeforeUpdate()
     @BeforeInsert()
     async hashPassword() {

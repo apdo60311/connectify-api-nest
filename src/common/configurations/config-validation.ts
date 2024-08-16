@@ -10,6 +10,10 @@ export class EnvironmentVariables {
 
     @IsDefined()
     @IsString()
+    FRONT_END_URL: string
+
+    @IsDefined()
+    @IsString()
     JWT_SECRET: string;
 
     @IsDefined()
@@ -83,6 +87,10 @@ export class EnvironmentVariables {
     @IsDefined()
     @IsNumber()
     BLOCK_DURATION: number
+
+    @IsDefined()
+    @IsNumber()
+    EMAIL_VERIFICATION_DURATION: number
 
 }
 

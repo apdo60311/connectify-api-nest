@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Req } from '@nestjs/common';
 import { UsersService } from 'src/features/user-managment/users.service';
 import { LoginDto } from './dto/login.dto';
-import { InvalidCredentialsException, UserNotFoundException } from 'src/common/errors/auth.exceptions';
+import { InvalidCredentialsException, UserIsNotVerified, UserNotFoundException } from 'src/common/errors/auth.exceptions';
 import { JwtPayload } from 'src/common/types/jwt-payload.type';
 import { compare } from "bcryptjs";
 import { JwtService } from '@nestjs/jwt/dist/jwt.service';
@@ -10,7 +10,7 @@ import { User } from 'src/features/user-managment/entities/user.entity';
 import { AccessTokenResponse } from './types/access-token.type';
 import * as crypto from "crypto"
 import { MailingService } from 'src/common/mailing/mailing.service';
-import { getLoginAttemptsWarningEmailHtml, getResetPasswordMailHtml } from 'src/common/constants/strings';
+import { getLoginAttemptsWarningEmailHtml, getResetPasswordMailHtml, getVerificationEmailHtml } from 'src/common/constants/strings';
 import { Repository } from 'typeorm';
 import { LoginAttemptsEntity } from './entities/login-attempts.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -33,6 +33,39 @@ export class AuthService {
 
     async login(request: Request, login: LoginDto) {
 
+        const isBlocked = await this.detectSuspiciousAttempts(login, request);
+
+        if (isBlocked) {
+            throw new HttpException('Too many login attempts. Please try again later.', HttpStatus.FORBIDDEN);
+        }
+
+        const user = await this.usersService.findOne({ email: login.email });
+
+        if (!user) {
+            throw new UserNotFoundException(login.email);
+        }
+
+        // check if user is not verified
+        if (!user.isVerified) {
+            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.FAILURE });
+            throw new UserIsNotVerified('User is not verified');
+        }
+
+        const passwordCorrect = await compare(login.password, user.password);
+
+        if (!passwordCorrect) {
+            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.FAILURE });
+            throw new InvalidCredentialsException();
+        } else {
+            // update login attempts
+            await this.loginAttemptsRepository.delete({ email: login.email });
+            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.SUCCESS });
+        }
+
+        return this.generateToken(user);
+    }
+
+    private async detectSuspiciousAttempts(login: LoginDto, request) {
         const maxLoginAttempts: number = this.configService.get<number>('MAX_LOGIN_ATTEMPTS');
         const maxFailureLoginAttempts: number = this.configService.get<number>('MAX_FAILURE_LOGIN_ATTEMPTS');
         const loginBlockDuration: number = this.configService.get<number>('BLOCK_DURATION');
@@ -49,42 +82,39 @@ export class AuthService {
 
             const deviceInfo = await this.deviceService.detectDevice(request);
 
-            this.mailingService.sendEmail(login.email, 'Login Attempts', getLoginAttemptsWarningEmailHtml({ deviceInfo }))
+            this.mailingService.sendEmail(login.email, 'Login Attempts', getLoginAttemptsWarningEmailHtml({ deviceInfo }));
         }
 
         const now = new Date().getTime();
         const isBlocked = attempts.length === maxLoginAttempts &&
             (now - new Date(attempts[attempts.length - 1].attemptDate).getTime()) < loginBlockDuration;
-
-
-        if (isBlocked) {
-            throw new HttpException('Too many login attempts. Please try again later.', HttpStatus.FORBIDDEN);
-        }
-
-        const user = await this.usersService.findOne({ email: login.email });
-        if (!user) {
-            throw new UserNotFoundException(login.email);
-        }
-
-        const passwordCorrect = await compare(login.password, user.password);
-
-
-        if (!passwordCorrect) {
-            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.FAILURE });
-            throw new InvalidCredentialsException();
-        } else {
-            // update login attempts
-            await this.loginAttemptsRepository.delete({ email: login.email });
-            await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.SUCCESS });
-        }
-
-        // set session
-        return this.generateToken(user);
+        return isBlocked;
     }
 
     async register(createUserDto: CreateUserDto): Promise<AccessTokenResponse> {
         const user = await this.usersService.create(createUserDto);
+        await this.sendVerificationEmail(user);
         return this.generateToken(user);
+    }
+
+    async verifyEmail(token: string) {
+        const user = await this.usersService.findOne({ verificationToken: token });
+        if (!user) {
+            throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
+        }
+
+        if (user.isVerified) {
+            throw new HttpException('Email already verified', HttpStatus.BAD_REQUEST);
+        }
+
+        if (user.verificationExpires < Date.now()) {
+            throw new UserIsNotVerified('Verification token expired');
+        }
+
+        user.isVerified = true;
+        user.verificationToken = null;
+        user.verificationExpires = null;
+        await this.usersService.update(user.id, user);
     }
 
     async requestResetPassword(email: string) {
@@ -93,7 +123,7 @@ export class AuthService {
             throw new HttpException('Email Not Found', HttpStatus.BAD_REQUEST);
         }
 
-        const token = crypto.randomBytes(20).toString('hex')
+        const token = this.generateRandomToken(20);
         user.resetPasswordToken = token;
         user.resetPasswordExpires = new Date(Date.now() + 3600000);
 
@@ -136,12 +166,50 @@ export class AuthService {
 
     }
 
+
+    async requestEmailVerification(email: string) {
+        const user = await this.usersService.findOne({ email })
+
+        if (!user) {
+            throw new HttpException('User Not Found', HttpStatus.BAD_REQUEST);
+        }
+
+        if (user.isVerified) {
+            throw new HttpException('Email already verified', HttpStatus.BAD_REQUEST);
+        }
+        // if token not expired yet
+        if (user.verificationExpires > Date.now()) {
+            throw new HttpException('Email already sent', HttpStatus.BAD_REQUEST);
+        }
+        this.sendVerificationEmail(user);
+    }
+
     private generateToken(user: User,): AccessTokenResponse {
         const payload: JwtPayload = { id: user.id, email: user.email, role: user.role };
         const accessToken = this.jwtService.sign(payload);
         return { access_token: accessToken };
     }
 
+    private generateRandomToken(length: number): string {
+        return crypto.randomBytes(length).toString('hex')
+    }
+
+
+    private async sendVerificationEmail(user: User) {
+
+        const token: string = this.generateRandomToken(20);
+        const verificationDuration: number = this.configService.get<number>('EMAIL_VERIFICATION_DURATION');
+        const verificationExpires = Date.now() + verificationDuration;
+
+
+        await this.usersService.update(user.id, { isVerified: false, verificationToken: token, verificationExpires });
+
+        const frontEndUrl: String = this.configService.get<string>('FRONT_END_URL');
+        const VerificationLink: string = `${frontEndUrl}auth/verify/${token}`;
+
+        this.mailingService.sendEmail(user.email, 'verification',
+            getVerificationEmailHtml({ VerificationLink }));
+    }
 
 }
 

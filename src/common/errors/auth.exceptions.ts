@@ -11,6 +11,12 @@ export class UserNotFoundException extends HttpException {
 
 }
 
+export class UserIsNotVerified extends HttpException {
+    constructor(reason: string) {
+        super(reason, HttpStatus.FORBIDDEN);
+    }
+}
+
 export class InvalidCredentialsException extends HttpException {
     constructor() {
         super('Invalid credentials', HttpStatus.UNAUTHORIZED);

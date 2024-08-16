@@ -1,12 +1,13 @@
-import { Controller, Post, Body, Param, HttpStatus, ParseUUIDPipe, Session, HttpException, Put, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, Param, HttpStatus, ParseUUIDPipe, Session, HttpException, Put, Req, Res, Get, UseGuards } from '@nestjs/common';
 import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 
 @Throttle({ default: { limit: 3, ttl: 300 } })
+@UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService,
@@ -32,6 +33,23 @@ export class AuthController {
     });
 
     return response.json({ code: HttpStatus.OK, message: "Logged in Successfully", data: {} });
+  }
+
+
+  @Post('request-verification-email')
+  async requestVerificationEmail(@Body() body: Record<string, any>) {
+    const email = body.email;
+    if (!email) {
+      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
+    }
+    await this.authService.requestEmailVerification(email);
+    return { code: HttpStatus.OK, message: "Verification email sent successfully" };
+  }
+
+  @Get('verify/:token')
+  async verifyEmail(@Param('token') token: string) {
+    await this.authService.verifyEmail(token);
+    return { code: HttpStatus.OK, message: "Email verified successfully" };
   }
 
   @Post('logout')
