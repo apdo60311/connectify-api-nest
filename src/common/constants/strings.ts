@@ -267,5 +267,5 @@ export function getVerificationEmailHtml(data: Record<string, any>): string {
     </div>
 </body>
 </html>
-`.replace('{{verificationLink}}', data.verificationLink);
+`.replaceAll('{{verificationLink}}', data.VerificationLink);
 }

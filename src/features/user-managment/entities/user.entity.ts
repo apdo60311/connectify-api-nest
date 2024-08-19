@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { UserRole } from 'src/features/user-managment/auth/enums/user-role.enum';
-import * as bcrypt from "bcryptjs"
+import * as bcrypt from "bcrypt"
 
 @Entity('user')
 export class User {

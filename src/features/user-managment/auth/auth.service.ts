@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable, Req } from '@nestjs/common';
 import { UsersService } from 'src/features/user-managment/users.service';
 import { LoginDto } from './dto/login.dto';
-import { InvalidCredentialsException, UserIsNotVerified, UserNotFoundException } from 'src/common/errors/auth.exceptions';
+import { InvalidCredentialsException, UserAlreadyExistsException, UserIsNotVerified, UserNotFoundException } from 'src/common/errors/auth.exceptions';
 import { JwtPayload } from 'src/common/types/jwt-payload.type';
-import { compare } from "bcryptjs";
+import * as bcrypt from "bcrypt";
 import { JwtService } from '@nestjs/jwt/dist/jwt.service';
 import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
 import { User } from 'src/features/user-managment/entities/user.entity';
@@ -51,7 +51,7 @@ export class AuthService {
             throw new UserIsNotVerified('User is not verified');
         }
 
-        const passwordCorrect = await compare(login.password, user.password);
+        const passwordCorrect = await bcrypt.compare(login.password, user.password);
 
         if (!passwordCorrect) {
             await this.loginAttemptsRepository.save({ email: login.email, attemptStatus: LoginAttemptStatus.FAILURE });
@@ -92,9 +92,16 @@ export class AuthService {
     }
 
     async register(createUserDto: CreateUserDto): Promise<AccessTokenResponse> {
-        const user = await this.usersService.create(createUserDto);
-        await this.sendVerificationEmail(user);
-        return this.generateToken(user);
+
+        const user = await this.usersService.findOne({ email: createUserDto.email });
+
+        if (user) {
+            throw new UserAlreadyExistsException();
+        }
+
+        const newUser = await this.usersService.create(createUserDto);
+        await this.sendVerificationEmail(newUser);
+        return this.generateToken(newUser);
     }
 
     async verifyEmail(token: string) {
@@ -107,6 +114,8 @@ export class AuthService {
             throw new HttpException('Email already verified', HttpStatus.BAD_REQUEST);
         }
 
+        console.log(Date.now());
+        console.log(user.verificationExpires);
         if (user.verificationExpires < Date.now()) {
             throw new UserIsNotVerified('Verification token expired');
         }
@@ -152,7 +161,7 @@ export class AuthService {
             throw new HttpException('Token expired', HttpStatus.NOT_FOUND);
         }
 
-        const isMatch: boolean = await compare(oldPassword, user.password)
+        const isMatch: boolean = await bcrypt.compare(oldPassword, user.password)
 
         if (isMatch) {
             user.password = newPassword;

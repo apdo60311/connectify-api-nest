@@ -23,9 +23,6 @@ export class UsersService {
 
   async findOne(where: FindOptionsWhere<User>) {
     const user: User = await this.usersRepository.findOneBy(where)
-    if (!user) {
-      throw new UserNotFoundException();
-    }
     return user;
   }
 

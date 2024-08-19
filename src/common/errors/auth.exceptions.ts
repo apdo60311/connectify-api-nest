@@ -11,6 +11,12 @@ export class UserNotFoundException extends HttpException {
 
 }
 
+export class UserAlreadyExistsException extends HttpException {
+    constructor() {
+        super('User already exists', HttpStatus.BAD_REQUEST)
+    }
+}
+
 export class UserIsNotVerified extends HttpException {
     constructor(reason: string) {
         super(reason, HttpStatus.FORBIDDEN);

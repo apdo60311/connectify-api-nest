@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, HttpStatus, ParseUUIDPipe, Session, HttpException, Put, Req, Res, Get, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Param, HttpStatus, HttpException, Put, Req, Res, Get, UseGuards } from '@nestjs/common';
 import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
@@ -15,10 +15,16 @@ export class AuthController {
   ) { }
 
   @Post('signup')
-  async signup(@Session() session, @Body() createUserDto: CreateUserDto): Promise<Record<string, any>> {
+  async signup(@Body() createUserDto: CreateUserDto): Promise<Record<string, any>> {
     const accessToken = await this.authService.register(createUserDto);
-    session.token = accessToken;
-    return { code: HttpStatus.OK, message: "user created successfully", data: accessToken };
+    const frontEndUrl = this.configService.get<string>('FRONT_END_URL');
+    return {
+      code: HttpStatus.OK, message: "user created successfully",
+      links: [
+        { login: `${frontEndUrl}auth/sigin` },
+        { sendVerificationEmail: `${frontEndUrl}auth/request-verification-email` }
+      ]
+    };
   }
 
   @Post('signin')
