@@ -4,16 +4,16 @@ import * as axios from "axios";
 import { DeviceInfo, DeviceLocation } from './types/device-info.type';
 @Injectable()
 export class DeviceService {
-    detectDevice(@Req() request: Request): any {
-        const deviceInfo = this.parseUserRequest(request);
+    detectDevice(requestInfo: Record<string, any>): any {
+        const deviceInfo = this.parseUserRequest(requestInfo);
         return deviceInfo;
     }
 
-    private async parseUserRequest(@Req() request: Request): Promise<DeviceInfo> {
+    private async parseUserRequest(requestInfo: Record<string, any>): Promise<DeviceInfo> {
 
 
-        const ip = request.ip || 'Unkown';
-        const userAgent = request.headers['user-agent'] || 'Unknown';
+        const ip = requestInfo.ip || 'Unkown';
+        const userAgent = requestInfo.headers['user-agent'] || 'Unknown';
         let device = 'Unknown';
         let os = 'Unknown';
         let browser = 'Unknown';

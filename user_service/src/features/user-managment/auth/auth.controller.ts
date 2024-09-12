@@ -1,22 +1,25 @@
 import { Controller, Post, Body, Param, HttpStatus, HttpException, Put, Req, Res, Get, UseGuards } from '@nestjs/common';
-import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
+import { CreateUserDto } from 'src/features/user-managment/auth/dto/create-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-
-@Throttle({ default: { limit: 3, ttl: 300 } })
-@UseGuards(ThrottlerGuard)
+import { EventPattern, MessagePattern, Payload } from "@nestjs/microservices"
+import { SigninPayload } from './types/signin-payload.type';
+import { FieldCannotBeEmpty, FieldIsRequired } from 'src/common/errors/auth.exceptions';
+// @Throttle({ default: { limit: 3, ttl: 300 } })
+// @UseGuards(ThrottlerGuard)
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService,
     private readonly configService: ConfigService
   ) { }
 
-  @Post('signup')
-  async signup(@Body() createUserDto: CreateUserDto): Promise<Record<string, any>> {
-    const accessToken = await this.authService.register(createUserDto);
+  @EventPattern('register')
+  async signup(@Payload() createUserDto: CreateUserDto): Promise<Record<string, any>> {
+    console.log('registering user');
+    await this.authService.register(createUserDto);
     const frontEndUrl = this.configService.get<string>('FRONT_END_URL');
     return {
       code: HttpStatus.OK, message: "user created successfully",
@@ -27,33 +30,35 @@ export class AuthController {
     };
   }
 
-  @Post('signin')
-  async signin(@Req() request: Request, @Res() response: Response, @Body() loginDto: LoginDto): Promise<Record<string, any>> {
-    const token = await this.authService.login(request, loginDto);
-    response.cookie('jwt', { token }, {
-      httpOnly: true,
-      secure: this.configService.get<string>('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      signed: true,
-      maxAge: 3600000
-    });
+  @MessagePattern({ cmd: 'login' })
+  async signin(@Payload() payload: SigninPayload): Promise<Record<string, any>> {
+    const token = await this.authService.login(payload.requestInfo, payload.loginDto);
+    // payload.response.cookie('jwt', { token }, {
+    //   httpOnly: true,
+    //   secure: this.configService.get<string>('NODE_ENV') === 'production',
+    //   sameSite: 'strict',
+    //   signed: true,
+    //   maxAge: 3600000
+    // });
 
-    return response.json({ code: HttpStatus.OK, message: "Logged in Successfully", data: {} });
+    // return payload.response.json({ code: HttpStatus.OK, message: "Logged in Successfully", data: {} });
+    return { code: HttpStatus.OK, message: "Logged in Successfully", data: {} };
   }
 
 
-  @Post('request-verification-email')
+  //TODO:  
+  @EventPattern('request-verification-email')
   async requestVerificationEmail(@Body() body: Record<string, any>) {
     const email = body.email;
     if (!email) {
-      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
+      throw new FieldIsRequired("Email is Required");
     }
     await this.authService.requestEmailVerification(email);
     return { code: HttpStatus.OK, message: "Verification email sent successfully" };
   }
 
-  @Get('verify/:token')
-  async verifyEmail(@Param('token') token: string) {
+  @MessagePattern({ cmd: 'verify-email' })
+  async verifyEmail(@Payload() token: string) {
     await this.authService.verifyEmail(token);
     return { code: HttpStatus.OK, message: "Email verified successfully" };
   }
@@ -72,7 +77,7 @@ export class AuthController {
   async requestResetPassword(@Body() body: Record<string, any>) {
     const email = body.email;
     if (!email) {
-      throw new HttpException('Email cannot be empty', HttpStatus.BAD_REQUEST);
+      throw new FieldCannotBeEmpty('Email cannot be empty');
     }
 
     try {
@@ -89,7 +94,7 @@ export class AuthController {
   async resetPassword(@Param('token') token: string, @Body() body: Record<string, any>) {
     const { oldPassword, newPassword } = body;
     if (!oldPassword || !newPassword) {
-      throw new HttpException('Old Password and New Password cannot be empty', HttpStatus.BAD_REQUEST);
+      throw new FieldCannotBeEmpty('Old Password and New Password cannot be empty');
     }
 
     try {

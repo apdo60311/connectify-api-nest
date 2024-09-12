@@ -1,7 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule, Post } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LoggerMiddleware } from './common/middlewares/logger/logger.middleware';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './features/user-managment/users.module';
 import { AuthModule } from './features/user-managment/auth/auth.module';
@@ -22,16 +21,17 @@ import { APP_GUARD } from '@nestjs/core';
     TypeOrmModule.forRootAsync(
       typeOrmAsyncOptions
     ),
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => [
-        {
-          ttl: config.get('THROTTLE_TTL_LONG'),
-          limit: config.get('THROTTLE_LIMIT_LONG'),
-        },
-      ],
-    }), PassportModule.register({ session: true }),
+    // ThrottlerModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   inject: [ConfigService],
+    //   useFactory: (config: ConfigService) => [
+    //     {
+    //       ttl: config.get('THROTTLE_TTL_LONG'),
+    //       limit: config.get('THROTTLE_LIMIT_LONG'),
+    //     },
+    //   ],
+    // }),
+    PassportModule.register({ session: true }),
     UsersModule,
     AuthModule,
     TwoFactorAuthModule,
@@ -41,14 +41,14 @@ import { APP_GUARD } from '@nestjs/core';
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard,
+    // },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*');
+    // consumer.apply(LoggerMiddleware).forRoutes('*');
   }
 }

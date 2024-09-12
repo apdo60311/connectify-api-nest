@@ -1,43 +1,88 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
+import { RpcException } from "@nestjs/microservices";
 
-export class UserNotFoundException extends HttpException {
+export class UserNotFoundException extends RpcException {
     constructor(email?: string) {
         if (email) {
-            super(`User with email ${email} not found`, HttpStatus.NOT_FOUND);
+            super({ message: `User with email ${email} not found`, code: HttpStatus.NOT_FOUND });
         } else {
-            super(`User cannot found`, HttpStatus.NOT_FOUND)
+            super({ message: `User cannot found`, code: HttpStatus.NOT_FOUND })
         }
     }
 
 }
 
-export class UserAlreadyExistsException extends HttpException {
+export class UserAlreadyExistsException extends RpcException {
     constructor() {
-        super('User already exists', HttpStatus.BAD_REQUEST)
+        super({ message: 'User already exists', code: HttpStatus.CONFLICT })
     }
 }
 
-export class UserIsNotVerified extends HttpException {
+
+export class UserIsNotVerified extends RpcException {
     constructor(reason: string) {
-        super(reason, HttpStatus.FORBIDDEN);
+        super({ message: reason, code: HttpStatus.FORBIDDEN });
     }
 }
 
-export class InvalidCredentialsException extends HttpException {
+export class UserAlreadyVerifiedException extends RpcException {
     constructor() {
-        super('Invalid credentials', HttpStatus.UNAUTHORIZED);
+        super({ message: 'Email already verified', code: HttpStatus.BAD_REQUEST });
     }
-}
 
-export class TokenExpiredException extends HttpException {
+}
+export class VerificationEmailAlreadySentException extends RpcException {
     constructor() {
-        super('Token has expired', HttpStatus.UNAUTHORIZED);
+        super({ message: 'Verification email already sent', code: HttpStatus.BAD_REQUEST });
     }
+
 }
 
-export class UnsupportedAuthenticationMethod extends HttpException {
+export class InvalidCredentialsException extends RpcException {
     constructor() {
-        super('This method is not supported', HttpStatus.NOT_IMPLEMENTED);
+        super({ message: 'Invalid credentials', code: HttpStatus.UNAUTHORIZED });
     }
 }
 
+export class TokenExpiredException extends RpcException {
+    constructor() {
+        super({ message: 'Token has expired', code: HttpStatus.UNAUTHORIZED });
+    }
+}
+
+export class UnsupportedAuthenticationMethod extends RpcException {
+    constructor() {
+        super({ message: 'This method is not supported', code: HttpStatus.NOT_IMPLEMENTED });
+    }
+}
+
+
+export class TooManyAttempts extends RpcException {
+    constructor() {
+        super({ message: 'Too many login attempts. Please try again later.', code: HttpStatus.FORBIDDEN })
+    }
+}
+
+export class InvalidToken extends RpcException {
+    constructor() {
+        super({ message: 'Invalid token', code: HttpStatus.BAD_REQUEST });
+    }
+}
+
+export class EmailAlreadyExists extends RpcException {
+    constructor() {
+        super({ message: 'Email already verified', code: HttpStatus.BAD_REQUEST })
+    }
+}
+
+export class FieldCannotBeEmpty extends RpcException {
+    constructor(message: string) {
+        super({ message, code: HttpStatus.BAD_REQUEST })
+    }
+}
+
+export class FieldIsRequired extends RpcException {
+    constructor(message: string) {
+        super({ message, code: HttpStatus.BAD_REQUEST })
+    }
+}

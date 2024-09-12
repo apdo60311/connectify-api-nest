@@ -8,7 +8,7 @@ import { validateConfig } from "./config-validation";
     imports: [ConfigModule.forRoot({
         load: [...configurations],
         validate: validateConfig,
-        envFilePath: ['.env.development', '.env.production'],
+        envFilePath: ['.env'],
         isGlobal: true,
     }),]
 })

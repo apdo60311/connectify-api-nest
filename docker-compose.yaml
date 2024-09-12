@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+  api_gateway:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - api_gateway_to_user_service
+      - nats_network
+    volumes:
+      - ./api/src:/usr/src/app/src
+    command: npm run start:dev
+    environment:
+      - PORT=3000
+  user_service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    depends_on:
+      - users_db
+      - nats
+    networks:
+      - user_service_to_db
+      - api_gateway_to_user_service
+      - nats_network
+    volumes:
+      - ./user_service/src:/usr/src/app/src
+    command: npm run start:dev
+
+  nats:
+    image: nats
+    ports:
+      - 4222:4222
+    networks:
+      - nats_network
+
+  users_db:
+    image: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: connectify_users_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1967
+    # ports:
+    #   - "5432:5432"
+    expose:
+      - 5432
+    networks:
+      - user_service_to_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  logging_service:
+    build:
+      context: ./logging_service
+      dockerfile: Dockerfile
+    networks:
+      - nats_network
+      
+
+networks:
+  user_service_to_db:
+  api_gateway_to_user_service:
+  nats_network:
+
+volumes:
+  postgres_data:

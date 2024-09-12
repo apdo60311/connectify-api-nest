@@ -2,7 +2,6 @@ import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nes
 import { ServerResponse } from 'http';
 import { map, Observable } from 'rxjs';
 import { ResponseType } from 'src/common/types/response.type';
-import { logger } from 'src/utils/logger';
 
 @Injectable()
 export class ResponseInterceptor implements NestInterceptor {
@@ -10,7 +9,7 @@ export class ResponseInterceptor implements NestInterceptor {
 
 
     return next.handle().pipe(map((data) => {
-      logger.info(data);
+      // logger.info(data);
       return ResponseType.fromJson(data);
     }));
   }

@@ -21,19 +21,18 @@ export const typeOrmAsyncOptions: TypeOrmModuleAsyncOptions = {
     useFactory: async (configService: ConfigService) => {
         return {
             type: "postgres",
-            host: "localhost",
-            port: 5432,
-            username: "postgres",
-            password: "1967",
-            database: "connectify_db",
-            synchronize: true,
-            logging: false,
+            host: configService.get<string>('DB_HOST'),
+            port: configService.get<number>('DB_PORT'),
+            username: configService.get<string>('DB_USERNAME'),
+            password: configService.get<string>('DB_PASSWORD'),
+            database: configService.get<string>('DB_NAME'),
+            synchronize: configService.get<boolean>('DB_SYNCHRONIZE'),
+            logging: configService.get<boolean>('DB_LOGGING'),
             entities: [User, LoginAttemptsEntity]
         }
     },
     inject: [ConfigService],
 }
-
 
 const APPConfig = registerAs(
     ConfigKey.APP, () => ({

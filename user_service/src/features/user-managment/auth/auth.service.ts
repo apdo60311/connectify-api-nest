@@ -1,11 +1,11 @@
-import { HttpException, HttpStatus, Injectable, Req } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from 'src/features/user-managment/users.service';
 import { LoginDto } from './dto/login.dto';
-import { InvalidCredentialsException, UserAlreadyExistsException, UserIsNotVerified, UserNotFoundException } from 'src/common/errors/auth.exceptions';
+import { EmailAlreadyExists, InvalidCredentialsException, InvalidToken, TokenExpiredException, TooManyAttempts, UserAlreadyExistsException, UserAlreadyVerifiedException, UserIsNotVerified, UserNotFoundException, VerificationEmailAlreadySentException } from 'src/common/errors/auth.exceptions';
 import { JwtPayload } from 'src/common/types/jwt-payload.type';
 import * as bcrypt from "bcrypt";
 import { JwtService } from '@nestjs/jwt/dist/jwt.service';
-import { CreateUserDto } from 'src/features/user-managment/dto/create-user.dto';
+import { CreateUserDto } from 'src/features/user-managment/auth/dto/create-user.dto';
 import { User } from 'src/features/user-managment/entities/user.entity';
 import { AccessTokenResponse } from './types/access-token.type';
 import * as crypto from "crypto"
@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import { LoginAttemptStatus } from './enums/login-attempt-status.enum';
 import { Request, Response } from 'express';
 import { DeviceService } from 'src/common/device-service/device.service';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class AuthService {
@@ -31,12 +32,12 @@ export class AuthService {
         private readonly deviceService: DeviceService,
     ) { }
 
-    async login(request: Request, login: LoginDto) {
+    async login(requestInfo: Record<string, any>, login: LoginDto) {
 
-        const isBlocked = await this.detectSuspiciousAttempts(login, request);
+        const isBlocked = await this.detectSuspiciousAttempts(login, requestInfo);
 
         if (isBlocked) {
-            throw new HttpException('Too many login attempts. Please try again later.', HttpStatus.FORBIDDEN);
+            throw new TooManyAttempts();
         }
 
         const user = await this.usersService.findOne({ email: login.email });
@@ -65,7 +66,7 @@ export class AuthService {
         return this.generateToken(user);
     }
 
-    private async detectSuspiciousAttempts(login: LoginDto, request) {
+    private async detectSuspiciousAttempts(login: LoginDto, requestInfo: Record<string, any>) {
         const maxLoginAttempts: number = this.configService.get<number>('MAX_LOGIN_ATTEMPTS');
         const maxFailureLoginAttempts: number = this.configService.get<number>('MAX_FAILURE_LOGIN_ATTEMPTS');
         const loginBlockDuration: number = this.configService.get<number>('BLOCK_DURATION');
@@ -80,7 +81,7 @@ export class AuthService {
 
         if (faildAttemptsCount % maxFailureLoginAttempts == 0 && faildAttemptsCount != 0) {
 
-            const deviceInfo = await this.deviceService.detectDevice(request);
+            const deviceInfo = await this.deviceService.detectDevice(requestInfo);
 
             this.mailingService.sendEmail(login.email, 'Login Attempts', getLoginAttemptsWarningEmailHtml({ deviceInfo }));
         }
@@ -107,11 +108,11 @@ export class AuthService {
     async verifyEmail(token: string) {
         const user = await this.usersService.findOne({ verificationToken: token });
         if (!user) {
-            throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
+            throw new InvalidToken();
         }
 
         if (user.isVerified) {
-            throw new HttpException('Email already verified', HttpStatus.BAD_REQUEST);
+            throw new EmailAlreadyExists();
         }
 
         console.log(Date.now());
@@ -129,7 +130,7 @@ export class AuthService {
     async requestResetPassword(email: string) {
         const user = await this.usersService.findOne({ email });
         if (!user) {
-            throw new HttpException('Email Not Found', HttpStatus.BAD_REQUEST);
+            throw new UserNotFoundException();
         }
 
         const token = this.generateRandomToken(20);
@@ -154,11 +155,11 @@ export class AuthService {
         const user = await this.usersService.findOne({ resetPasswordToken: token, })
 
         if (!user) {
-            throw new HttpException('User Not Found', HttpStatus.BAD_REQUEST);
+            throw new UserNotFoundException();
         }
 
         if (new Date(user.resetPasswordExpires) < new Date()) {
-            throw new HttpException('Token expired', HttpStatus.NOT_FOUND);
+            throw new TokenExpiredException();
         }
 
         const isMatch: boolean = await bcrypt.compare(oldPassword, user.password)
@@ -180,17 +181,17 @@ export class AuthService {
         const user = await this.usersService.findOne({ email })
 
         if (!user) {
-            throw new HttpException('User Not Found', HttpStatus.BAD_REQUEST);
+            throw new UserNotFoundException();
         }
 
         if (user.isVerified) {
-            throw new HttpException('Email already verified', HttpStatus.BAD_REQUEST);
+            throw new UserAlreadyVerifiedException();
         }
         // if token not expired yet
         if (user.verificationExpires > Date.now()) {
-            throw new HttpException('Email already sent', HttpStatus.BAD_REQUEST);
+            throw new VerificationEmailAlreadySentException();
         }
-        this.sendVerificationEmail(user);
+        return this.sendVerificationEmail(user);
     }
 
     private generateToken(user: User,): AccessTokenResponse {

@@ -1,7 +1,6 @@
 import { IsDefined, IsEnum, IsNumber, IsString, validateSync } from "class-validator";
 import { Environment } from "./types/configuration-options.type";
 import { plainToInstance } from "class-transformer";
-import { logger } from "src/utils/logger";
 
 export class EnvironmentVariables {
     @IsDefined()
@@ -101,7 +100,7 @@ export function validateConfig(configuration: Record<string, any>) {
 
 
     for (const error of errors) {
-        logger.error(`${error.property} is missing!`)
+        // logger.error(`${error.property} is missing!`)
     }
 
     if (errors.length) {
